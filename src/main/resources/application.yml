@@ -1,0 +1,15 @@
+micronaut:
+  application:
+    name: desafio-estapar
+datasources:
+  default:
+    url: jdbc:mysql://localhost:3306/db
+    username: root
+    password: ''
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    db-type: mysql
+    dialect: MYSQL
+flyway:
+  datasources:
+    default:
+      enabled: true

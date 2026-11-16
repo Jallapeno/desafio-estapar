@@ -4,6 +4,7 @@ import br.com.estapar.parking.domain.model.ParkingSpot
 import br.com.estapar.parking.domain.model.Sector
 import br.com.estapar.parking.domain.port.outbound.ParkingSpotRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.SectorRepositoryPort
+import br.com.estapar.parking.infrastructure.persistence.repository.ParkingSessionJdbcRepository
 import br.com.estapar.parking.infrastructure.persistence.repository.ParkingSpotJdbcRepository
 import br.com.estapar.parking.infrastructure.persistence.repository.SectorJdbcRepository
 import io.micronaut.data.jdbc.runtime.JdbcOperations
@@ -35,6 +36,9 @@ class GaragePersistenceIntegrationTest {
     lateinit var parkingSpotJdbcRepository: ParkingSpotJdbcRepository
 
     @Inject
+    lateinit var parkingSessionJdbcRepository: ParkingSessionJdbcRepository
+
+    @Inject
     lateinit var jdbcOperations: JdbcOperations
 
     @Inject
@@ -42,6 +46,7 @@ class GaragePersistenceIntegrationTest {
 
     @BeforeEach
     fun cleanup() {
+        parkingSessionJdbcRepository.deleteAll()
         parkingSpotJdbcRepository.deleteAll()
         sectorJdbcRepository.deleteAll()
     }

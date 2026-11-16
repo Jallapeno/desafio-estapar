@@ -3,6 +3,10 @@ micronaut:
     name: estapar-parking-service
   server:
     port: ${SERVER_PORT:3003}
+  http:
+    client:
+      connect-timeout: 2s
+      read-timeout: 5s
 
 datasources:
   default:

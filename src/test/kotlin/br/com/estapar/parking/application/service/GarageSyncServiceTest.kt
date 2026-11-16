@@ -10,6 +10,8 @@ import br.com.estapar.parking.domain.port.outbound.SectorRepositoryPort
 import br.com.estapar.parking.infrastructure.simulator.dto.GarageConfigResponse
 import io.micronaut.serde.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 
@@ -95,5 +97,43 @@ class GarageSyncServiceTest {
         assertEquals(50, parsed.sectors[1].maxCapacity)
         assertEquals(1, parsed.spots.size)
         assertEquals(1L, parsed.spots[0].id)
+    }
+
+    @Test
+    fun `should not open transaction when fetching garage configuration fails`() {
+        var transactionStarted = false
+        val failingProvider = object : GarageConfigProviderPort {
+            override fun fetchConfiguration(): GarageConfiguration {
+                throw IllegalStateException("Simulator unavailable")
+            }
+        }
+        val transactionPort = object : TransactionPort {
+            override fun <T> executeInTransaction(block: () -> T): T {
+                transactionStarted = true
+                return block()
+            }
+        }
+        val sectorPort = object : SectorRepositoryPort {
+            override fun upsertAll(sectors: List<Sector>) = Unit
+            override fun findAllForUpdate(): List<Sector> = emptyList()
+            override fun findByCode(code: String): Sector? = null
+            override fun findFirst(): Sector? = null
+            override fun sumMaxCapacity(): Long = 0L
+        }
+        val spotPort = object : ParkingSpotRepositoryPort {
+            override fun upsertAll(spots: List<ParkingSpot>) = Unit
+            override fun findById(id: Long): ParkingSpot? = null
+            override fun findByCoordinates(lat: BigDecimal, lng: BigDecimal): ParkingSpot? = null
+            override fun findNearestAvailable(lat: BigDecimal, lng: BigDecimal): ParkingSpot? = null
+            override fun updateOccupied(spotId: Long, occupied: Boolean) = Unit
+            override fun countAll(): Long = 0L
+        }
+
+        val service = GarageSyncService(failingProvider, sectorPort, spotPort, transactionPort)
+
+        assertThrows(IllegalStateException::class.java) {
+            service.synchronize()
+        }
+        assertFalse(transactionStarted)
     }
 }

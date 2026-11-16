@@ -15,6 +15,7 @@ open class SimulatorGarageConfigAdapter(
         attempts = "\${simulator.retry.attempts:5}",
         delay = "\${simulator.retry.delay:1s}",
         multiplier = "\${simulator.retry.multiplier:2.0}",
+        excludes = [IllegalArgumentException::class],
     )
     override fun fetchConfiguration(): GarageConfiguration =
         simulatorHttpClient.fetchGarageConfiguration().toDomain()

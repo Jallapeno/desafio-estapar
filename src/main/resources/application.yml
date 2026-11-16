@@ -3,6 +3,10 @@ micronaut:
     name: estapar-parking-service
   server:
     port: ${SERVER_PORT:3003}
+  http:
+    client:
+      connect-timeout: 2s
+      read-timeout: 5s
 
 datasources:
   default:
@@ -20,3 +24,8 @@ flyway:
 
 simulator:
   base-url: ${SIMULATOR_URL:http://localhost:8080}
+  sync-on-startup: ${SIMULATOR_SYNC_ON_STARTUP:true}
+  retry:
+    attempts: ${SIMULATOR_RETRY_ATTEMPTS:5}
+    delay: ${SIMULATOR_RETRY_DELAY:1s}
+    multiplier: ${SIMULATOR_RETRY_MULTIPLIER:2.0}

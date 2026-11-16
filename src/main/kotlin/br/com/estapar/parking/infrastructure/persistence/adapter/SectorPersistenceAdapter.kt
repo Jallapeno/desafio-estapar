@@ -3,6 +3,7 @@ package br.com.estapar.parking.infrastructure.persistence.adapter
 import br.com.estapar.parking.domain.model.Sector
 import br.com.estapar.parking.domain.port.outbound.SectorRepositoryPort
 import br.com.estapar.parking.infrastructure.persistence.repository.SectorJdbcRepository
+import io.micronaut.transaction.annotation.Transactional
 import jakarta.inject.Singleton
 
 @Singleton
@@ -10,6 +11,7 @@ open class SectorPersistenceAdapter(
     private val sectorJdbcRepository: SectorJdbcRepository,
 ) : SectorRepositoryPort {
 
+    @Transactional
     override fun upsertAll(sectors: List<Sector>) {
         sectors.forEach { sector ->
             sectorJdbcRepository.upsert(

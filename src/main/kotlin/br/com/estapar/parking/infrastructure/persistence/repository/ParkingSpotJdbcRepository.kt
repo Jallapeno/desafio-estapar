@@ -29,11 +29,11 @@ interface ParkingSpotJdbcRepository : CrudRepository<ParkingSpotEntity, Long> {
     @Query(
         """
         INSERT INTO parking_spots (id, sector_code, lat, lng, occupied)
-        VALUES (:id, :sectorCode, :lat, :lng, :occupied)
+        VALUES (:id, :sectorCode, :lat, :lng, :occupied) AS incoming
         ON DUPLICATE KEY UPDATE
-            sector_code = VALUES(sector_code),
-            lat = VALUES(lat),
-            lng = VALUES(lng)
+            sector_code = incoming.sector_code,
+            lat = incoming.lat,
+            lng = incoming.lng
         """,
     )
     fun upsert(id: Long, sectorCode: String, lat: BigDecimal, lng: BigDecimal, occupied: Boolean)

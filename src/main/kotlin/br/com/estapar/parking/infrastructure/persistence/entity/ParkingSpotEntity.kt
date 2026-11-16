@@ -23,14 +23,4 @@ data class ParkingSpotEntity(
         lng = lng,
         occupied = occupied,
     )
-
-    companion object {
-        fun fromDomain(spot: ParkingSpot): ParkingSpotEntity = ParkingSpotEntity(
-            id = spot.id,
-            sectorCode = spot.sectorCode,
-            lat = spot.lat,
-            lng = spot.lng,
-            occupied = spot.occupied,
-        )
-    }
 }

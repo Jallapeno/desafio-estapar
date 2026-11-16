@@ -150,4 +150,44 @@ class GaragePersistenceIntegrationTest {
         assertEquals(listOf("A", "B"), lockedSectors.map { it.code })
         assertEquals(100L, sectorRepositoryPort.sumMaxCapacity())
     }
+
+    @Test
+    fun `should find sector by code, first ordered sector, count spots and release occupied spot`() {
+        sectorRepositoryPort.upsertAll(
+            listOf(
+                Sector(code = "B", basePrice = BigDecimal("15.00"), maxCapacity = 30),
+                Sector(code = "A", basePrice = BigDecimal("10.00"), maxCapacity = 20),
+            ),
+        )
+        parkingSpotRepositoryPort.upsertAll(
+            listOf(
+                ParkingSpot(
+                    id = 10L,
+                    sectorCode = "A",
+                    lat = BigDecimal("-23.561684"),
+                    lng = BigDecimal("-46.655981"),
+                ),
+                ParkingSpot(
+                    id = 20L,
+                    sectorCode = "B",
+                    lat = BigDecimal("-23.561700"),
+                    lng = BigDecimal("-46.656000"),
+                ),
+            ),
+        )
+
+        val sectorB = sectorRepositoryPort.findByCode("B")
+        val firstSector = sectorRepositoryPort.findFirst()
+        assertNotNull(sectorB)
+        assertEquals(BigDecimal("15.00"), sectorB!!.basePrice)
+        assertNotNull(firstSector)
+        assertEquals("A", firstSector!!.code)
+        assertEquals(2L, parkingSpotRepositoryPort.countAll())
+
+        parkingSpotRepositoryPort.updateOccupied(spotId = 10L, occupied = true)
+        assertTrue(parkingSpotRepositoryPort.findById(10L)!!.occupied)
+
+        parkingSpotRepositoryPort.updateOccupied(spotId = 10L, occupied = false)
+        assertFalse(parkingSpotRepositoryPort.findById(10L)!!.occupied)
+    }
 }

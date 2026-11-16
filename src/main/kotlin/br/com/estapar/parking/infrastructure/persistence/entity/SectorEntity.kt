@@ -20,12 +20,4 @@ data class SectorEntity(
         basePrice = basePrice,
         maxCapacity = maxCapacity,
     )
-
-    companion object {
-        fun fromDomain(sector: Sector): SectorEntity = SectorEntity(
-            sector = sector.code,
-            basePrice = sector.basePrice,
-            maxCapacity = sector.maxCapacity,
-        )
-    }
 }

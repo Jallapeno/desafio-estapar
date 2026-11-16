@@ -7,8 +7,8 @@ micronaut:
 datasources:
   default:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:estapar_garage}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useTimezone=true&createDatabaseIfNotExist=true
-    username: ${DB_USER:estapar}
-    password: ${DB_PASSWORD:estapar}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     db-type: mysql
     dialect: MYSQL

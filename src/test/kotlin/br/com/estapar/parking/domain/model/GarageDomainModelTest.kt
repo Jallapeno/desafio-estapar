@@ -23,6 +23,18 @@ class GarageDomainModelTest {
     }
 
     @Test
+    fun `should reject blank sectorCode when creating parking spot`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ParkingSpot(
+                id = 1L,
+                sectorCode = " ",
+                lat = BigDecimal("-23.561684"),
+                lng = BigDecimal("-46.655981"),
+            )
+        }
+    }
+
+    @Test
     fun `should toggle parking spot occupancy immutably`() {
         val spot = ParkingSpot(
             id = 1L,

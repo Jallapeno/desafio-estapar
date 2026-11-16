@@ -1,4 +1,10 @@
+micronaut:
+  server:
+    port: -1
+
 datasources:
   default:
-    url: jdbc:tc:mysql:8:///db
+    url: jdbc:tc:mysql:8.0:///estapar_garage?TC_DAEMON=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useTimezone=true
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    db-type: mysql
+    dialect: MYSQL

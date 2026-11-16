@@ -3,6 +3,7 @@ package br.com.estapar.parking.infrastructure.simulator
 import br.com.estapar.parking.application.port.inbound.SyncGarageUseCase
 import br.com.estapar.parking.domain.port.outbound.ParkingSpotRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.SectorRepositoryPort
+import br.com.estapar.parking.infrastructure.persistence.repository.ParkingSessionJdbcRepository
 import br.com.estapar.parking.infrastructure.persistence.repository.ParkingSpotJdbcRepository
 import br.com.estapar.parking.infrastructure.persistence.repository.SectorJdbcRepository
 import br.com.estapar.parking.infrastructure.startup.GarageSyncStartupListener
@@ -60,6 +61,9 @@ class GarageSyncIntegrationTest : TestPropertyProvider {
     lateinit var parkingSpotJdbcRepository: ParkingSpotJdbcRepository
 
     @Inject
+    lateinit var parkingSessionJdbcRepository: ParkingSessionJdbcRepository
+
+    @Inject
     lateinit var applicationContext: ApplicationContext
 
     override fun getProperties(): Map<String, String> =
@@ -67,6 +71,7 @@ class GarageSyncIntegrationTest : TestPropertyProvider {
 
     @BeforeEach
     fun setup() {
+        parkingSessionJdbcRepository.deleteAll()
         parkingSpotJdbcRepository.deleteAll()
         sectorJdbcRepository.deleteAll()
         mockController.reset()

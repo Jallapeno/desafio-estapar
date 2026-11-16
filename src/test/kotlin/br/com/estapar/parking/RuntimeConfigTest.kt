@@ -33,6 +33,6 @@ class RuntimeConfigTest {
         assertTrue(yaml.contains("connectionTimeZone=UTC"))
         assertTrue(yaml.contains("forceConnectionTimeZoneToSession=true"))
         assertTrue(yaml.contains("enabled: true"))
-        assertFalse(yaml.contains(":estapar"))
+        assertFalse(Regex("(username|password):\\s*\\$\\{[^:}]+:[^}]+\\}").containsMatchIn(yaml))
     }
 }

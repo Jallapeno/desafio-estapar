@@ -20,6 +20,7 @@ data class ParkingSession(
 ) {
     init {
         require(licensePlate.isNotBlank()) { "License plate must not be blank" }
+        require(licensePlate.length <= 20) { "License plate must be at most 20 characters" }
         require(occupancyRateAtEntry >= BigDecimal.ZERO) { "Occupancy rate must not be negative" }
         require(dynamicMultiplier > BigDecimal.ZERO) { "Dynamic multiplier must be positive" }
     }

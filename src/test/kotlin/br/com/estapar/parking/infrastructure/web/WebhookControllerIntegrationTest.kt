@@ -47,7 +47,7 @@ class WebhookControllerIntegrationTest {
     fun `should deserialize ENTRY, PARKED and EXIT payloads in snake_case with millisecond precision`() {
         val entryPayload = """
             {
-              "license_plate": "ZUL0001",
+              "license_plate": " zul0001 ",
               "entry_time": "2025-01-01T12:00:00.123Z",
               "event_type": "ENTRY"
             }
@@ -91,6 +91,7 @@ class WebhookControllerIntegrationTest {
     fun `should return 400 Bad Request for blank license_plate, unknown event_type or missing event fields`() {
         val invalidPayloads = listOf(
             """{"license_plate": "   ", "entry_time": "2025-01-01T12:00:00.000Z", "event_type": "ENTRY"}""",
+            """{"license_plate": "${"A".repeat(21)}", "entry_time": "2025-01-01T12:00:00.000Z", "event_type": "ENTRY"}""",
             """{"license_plate": "ZUL0001", "event_type": "INVALID_TYPE"}""",
             """{"license_plate": "ZUL0001", "event_type": "ENTRY"}""",
             """{"license_plate": "ZUL0001", "lat": -23.561684, "event_type": "PARKED"}""",

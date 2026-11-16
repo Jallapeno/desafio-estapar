@@ -23,6 +23,15 @@ class ParkingSessionDomainModelTest {
         }
         assertThrows(IllegalArgumentException::class.java) {
             ParkingSession(
+                licensePlate = "A".repeat(21),
+                status = SessionStatus.ENTERED,
+                entryTime = now,
+                occupancyRateAtEntry = BigDecimal("0.1000"),
+                dynamicMultiplier = BigDecimal("0.90"),
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ParkingSession(
                 licensePlate = "ZUL0001",
                 status = SessionStatus.ENTERED,
                 entryTime = now,

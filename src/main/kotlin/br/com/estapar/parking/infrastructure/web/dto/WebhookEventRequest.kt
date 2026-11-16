@@ -7,6 +7,7 @@ import io.micronaut.core.annotation.Introspected
 import io.micronaut.serde.annotation.Serdeable
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -14,6 +15,7 @@ import java.time.Instant
 @Introspected
 data class WebhookEventRequest(
     @field:NotBlank(message = "license_plate must not be blank")
+    @field:Size(max = 20, message = "license_plate must be at most 20 characters")
     @field:JsonProperty("license_plate")
     val licensePlate: String? = null,
     @field:NotNull(message = "event_type is required")
@@ -28,7 +30,7 @@ data class WebhookEventRequest(
 ) {
     fun toCommand(): WebhookEventCommand {
         val type = requireNotNull(eventType) { "event_type is required" }
-        val plate = licensePlate?.trim()?.takeIf { it.isNotEmpty() }
+        val plate = licensePlate?.trim()?.uppercase()?.takeIf { it.isNotEmpty() }
             ?: throw IllegalArgumentException("license_plate must not be blank")
 
         validateEventFields(type)

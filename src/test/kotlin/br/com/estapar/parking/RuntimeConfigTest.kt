@@ -2,6 +2,7 @@ package br.com.estapar.parking
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.TimeZone
@@ -32,5 +33,6 @@ class RuntimeConfigTest {
         assertTrue(yaml.contains("connectionTimeZone=UTC"))
         assertTrue(yaml.contains("forceConnectionTimeZoneToSession=true"))
         assertTrue(yaml.contains("enabled: true"))
+        assertFalse(yaml.contains(":estapar"))
     }
 }

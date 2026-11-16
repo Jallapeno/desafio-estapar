@@ -6,15 +6,15 @@ services:
     command: --default-time-zone=+00:00
     environment:
       MYSQL_DATABASE: ${DB_NAME:-estapar_garage}
-      MYSQL_USER: ${DB_USER:-estapar}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-estapar}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_USER: ${DB_USER:?Set DB_USER in .env}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env}
     ports:
       - "${DB_PORT:-3306}:3306"
     volumes:
       - estapar_mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\""]
       interval: 5s
       timeout: 5s
       retries: 12

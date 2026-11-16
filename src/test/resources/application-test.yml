@@ -5,6 +5,8 @@ micronaut:
 datasources:
   default:
     url: jdbc:tc:mysql:8.0:///estapar_garage?TC_DAEMON=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&useTimezone=true
+    username: ""
+    password: ""
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
     db-type: mysql
     dialect: MYSQL

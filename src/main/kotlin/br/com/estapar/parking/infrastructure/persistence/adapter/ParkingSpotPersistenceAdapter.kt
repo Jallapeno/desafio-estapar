@@ -3,6 +3,7 @@ package br.com.estapar.parking.infrastructure.persistence.adapter
 import br.com.estapar.parking.domain.model.ParkingSpot
 import br.com.estapar.parking.domain.port.outbound.ParkingSpotRepositoryPort
 import br.com.estapar.parking.infrastructure.persistence.repository.ParkingSpotJdbcRepository
+import io.micronaut.transaction.annotation.Transactional
 import jakarta.inject.Singleton
 import java.math.BigDecimal
 
@@ -11,6 +12,7 @@ open class ParkingSpotPersistenceAdapter(
     private val parkingSpotJdbcRepository: ParkingSpotJdbcRepository,
 ) : ParkingSpotRepositoryPort {
 
+    @Transactional
     override fun upsertAll(spots: List<ParkingSpot>) {
         spots.forEach { spot ->
             parkingSpotJdbcRepository.upsert(

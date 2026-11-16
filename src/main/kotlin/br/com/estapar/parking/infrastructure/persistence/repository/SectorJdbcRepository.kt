@@ -22,10 +22,10 @@ interface SectorJdbcRepository : CrudRepository<SectorEntity, String> {
     @Query(
         """
         INSERT INTO sectors (sector, base_price, max_capacity)
-        VALUES (:sector, :basePrice, :maxCapacity)
+        VALUES (:sector, :basePrice, :maxCapacity) AS incoming
         ON DUPLICATE KEY UPDATE
-            base_price = VALUES(base_price),
-            max_capacity = VALUES(max_capacity)
+            base_price = incoming.base_price,
+            max_capacity = incoming.max_capacity
         """,
     )
     fun upsert(sector: String, basePrice: BigDecimal, maxCapacity: Int)

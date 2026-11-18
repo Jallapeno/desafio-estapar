@@ -10,22 +10,29 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 import java.time.Instant
+import io.swagger.v3.oas.annotations.media.Schema
 
 @Serdeable
 @Introspected
 data class WebhookEventRequest(
+    @field:Schema(description = "Placa normalizada com trim e maiúsculas.", example = "ABC1234", requiredMode = Schema.RequiredMode.REQUIRED)
     @field:NotBlank(message = "license_plate must not be blank")
     @field:Size(max = 20, message = "license_plate must be at most 20 characters")
     @field:JsonProperty("license_plate")
     val licensePlate: String? = null,
+    @field:Schema(description = "Tipo do evento. Define quais campos adicionais são obrigatórios.", requiredMode = Schema.RequiredMode.REQUIRED)
     @field:NotNull(message = "event_type is required")
     @field:JsonProperty("event_type")
     val eventType: WebhookEventType? = null,
     @field:JsonProperty("entry_time")
+    @field:Schema(description = "Obrigatório em ENTRY. ISO-8601, precisão máxima de milissegundos.", example = "2025-01-01T10:00:00.000Z")
     val entryTime: Instant? = null,
     @field:JsonProperty("exit_time")
+    @field:Schema(description = "Obrigatório em EXIT; não pode anteceder a entrada ativa. Precisão de milissegundos.", example = "2025-01-01T11:15:00.000Z")
     val exitTime: Instant? = null,
+    @field:Schema(description = "Obrigatória em PARKED; latitude exata da vaga, até seis casas decimais.", example = "-23.561684")
     val lat: BigDecimal? = null,
+    @field:Schema(description = "Obrigatória em PARKED; longitude exata da vaga, até seis casas decimais.", example = "-46.655981")
     val lng: BigDecimal? = null,
 ) {
     fun toCommand(): WebhookEventCommand {

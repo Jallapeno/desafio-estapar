@@ -18,6 +18,8 @@ repositories {
 }
 
 dependencies {
+    ksp("io.micronaut.openapi:micronaut-openapi")
+    implementation("io.micronaut.openapi:micronaut-openapi-annotations")
     ksp("io.micronaut.data:micronaut-data-processor")
     ksp("io.micronaut:micronaut-http-validation")
     ksp("io.micronaut.serde:micronaut-serde-processor")
@@ -42,6 +44,7 @@ dependencies {
     runtimeOnly("org.yaml:snakeyaml")
 
     testImplementation("io.micronaut:micronaut-http-client")
+    testImplementation("org.yaml:snakeyaml")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mysql")
     testImplementation("org.testcontainers:testcontainers")
@@ -119,4 +122,18 @@ tasks.jacocoTestCoverageVerification {
 
 tasks.check {
     dependsOn(tasks.jacocoTestCoverageVerification)
+}
+
+ksp {
+    arg("micronaut.openapi.project.dir", projectDir.toString())
+    arg("micronaut.openapi.views.spec", "swagger-ui.enabled=true")
+}
+
+tasks.matching { it.name == "kspKotlin" }.configureEach {
+    inputs.file("openapi.properties")
+}
+
+// Test-only controllers must not shadow the application OpenAPI resource on the test classpath.
+configurations.matching { it.name == "kspTest" }.configureEach {
+    exclude(group = "io.micronaut.openapi", module = "micronaut-openapi")
 }

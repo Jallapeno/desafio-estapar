@@ -113,7 +113,7 @@ Com a aplicação em execução, abra [Swagger UI](http://localhost:3003/swagger
 O contrato gerado está em [OpenAPI YAML](http://localhost:3003/swagger/estapar.yml).
 A geração ocorre durante o build, via Micronaut OpenAPI/KSP; não é necessário manter um YAML manual.
 
-A interface documenta os exemplos dos três eventos, campos condicionais e respostas HTTP. Para experimentar `GET /revenue` no navegador, use os query params: o body GET está documentado para outros clientes, mas navegadores não o enviam pelo Swagger UI. Os recursos da interface são servidos pela própria aplicação.
+A interface documenta os exemplos dos três eventos, campos condicionais e respostas HTTP. Para experimentar `GET /revenue` no navegador, use os query params: o GET não declara `requestBody` no contrato OpenAPI, pois navegadores bloqueiam GET com body. A compatibilidade com body JSON permanece na API e está descrita no texto da operação e nos exemplos abaixo para outros clientes HTTP. Os recursos da interface são servidos pela própria aplicação.
 
 Configuração baseada no [guia oficial Micronaut OpenAPI](https://micronaut-projects.github.io/micronaut-openapi/latest/guide/).
 

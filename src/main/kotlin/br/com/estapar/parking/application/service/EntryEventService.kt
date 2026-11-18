@@ -24,6 +24,9 @@ class EntryEventService(
             if (sessionRepository.findActiveByLicensePlate(licensePlate) != null) {
                 return@executeInTransaction EntryResult.ALREADY_ACTIVE
             }
+            if (sessionRepository.existsByLicensePlateAndEntryTime(licensePlate, entryTime)) {
+                return@executeInTransaction EntryResult.ALREADY_PROCESSED
+            }
             val capacity = sectors.sumOf { it.maxCapacity.toLong() }
             val active = sessionRepository.countActiveSessions()
             if (capacity <= 0 || active >= capacity) {

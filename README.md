@@ -137,7 +137,7 @@ curl.exe 'http://localhost:3003/revenue?sector=A&date=2025-01-01'
 - Coordenadas são `DECIMAL(10,6)`/`BigDecimal`, sem fallback por proximidade. Uma sessão estacionada não pode mudar de vaga por um segundo `PARKED`.
 - Saída sem `PARKED` usa o primeiro setor por código, registra-o na sessão e aplica a mesma tolerância. É uma premissa do projeto: o PDF não define esse setor padrão.
 - A receita pertence ao setor e ao dia UTC da saída, somando somente sessões `EXITED`.
-- O contrato não traz identificador único dos eventos nem timestamp no `PARKED`. A idempotência é baseada no estado da sessão; não há garantia de deduplicação global de eventos antigos entre visitas distintas. Um `EXIT` anterior à nova entrada é rejeitado.
+- O ENTRY é deduplicado por placa e horário de entrada, inclusive após encerrar a visita; um horário novo permite nova visita. A verificação histórica ocorre sob o mesmo lock dos setores. O contrato não traz identificador único dos eventos nem timestamp no `PARKED`; para os demais eventos, a idempotência depende do estado da sessão e não garante deduplicação global entre visitas distintas. Um `EXIT` anterior à nova entrada é rejeitado.
 
 ## Arquitetura
 

@@ -2,6 +2,7 @@ package br.com.estapar.parking.infrastructure.web
 
 import br.com.estapar.parking.application.port.inbound.EntryResult
 import br.com.estapar.parking.application.port.inbound.ProcessEntryUseCase
+import br.com.estapar.parking.application.port.inbound.ProcessExitUseCase
 import br.com.estapar.parking.domain.model.ParkingSpot
 import br.com.estapar.parking.domain.model.Sector
 import br.com.estapar.parking.domain.model.SessionStatus
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test
 @MicronautTest(transactional = false)
 class EntryEventIntegrationTest {
     @Inject lateinit var entries: ProcessEntryUseCase
+    @Inject lateinit var exits: ProcessExitUseCase
     @Inject lateinit var sessions: ParkingSessionRepositoryPort
     @Inject lateinit var sectors: SectorRepositoryPort
     @Inject lateinit var spots: ParkingSpotRepositoryPort
@@ -157,4 +159,42 @@ class EntryEventIntegrationTest {
         assertEquals(9, results.count { it == EntryResult.ALREADY_ACTIVE })
         assertEquals(1L, sessionJdbc.count())
     }
+    @Test
+    fun `should acknowledge historic ENTRY replay over HTTP without phantom capacity and allow a new visit`() {
+        capacity(1)
+        webhook("ZUL0001")
+        val firstId = sessions.findActiveByLicensePlate("ZUL0001")!!.id!!
+        exits.exit("ZUL0001", entryTime.plusSeconds(3600))
+        val closed = sessionJdbc.findById(firstId).orElseThrow()
+        assertEquals(HttpStatus.OK, webhook("ZUL0001").status)
+        assertEquals(EntryResult.ALREADY_PROCESSED, entries.enter("ZUL0001", entryTime))
+        assertEquals(1L, sessionJdbc.count())
+        assertEquals(0L, sessions.countActiveSessions())
+        assertEquals(closed, sessionJdbc.findById(firstId).orElseThrow())
+        assertEquals(EntryResult.ACCEPTED, entries.enter("ZUL0001", entryTime.plusSeconds(7200)))
+        assertEquals(2L, sessionJdbc.count())
+    }
+
+    @Test
+    fun `should keep ten simultaneous historic ENTRY replays idempotent`() {
+        capacity(1)
+        entries.enter("ZUL0001", entryTime)
+        exits.exit("ZUL0001", entryTime.plusSeconds(3600))
+        assertEquals(List(10) { EntryResult.ALREADY_PROCESSED }, concurrently(List(10) { "ZUL0001" }))
+        assertEquals(1L, sessionJdbc.count())
+        assertEquals(0L, sessions.countActiveSessions())
+    }
+
+    @Test
+    fun `should deduplicate historic entry even when another vehicle fills capacity`() {
+        capacity(1)
+        entries.enter("OLD", entryTime)
+        exits.exit("OLD", entryTime.plusSeconds(3600))
+        entries.enter("CURRENT", entryTime.plusSeconds(7200))
+        val current = sessions.findActiveByLicensePlate("CURRENT")!!
+        assertEquals(EntryResult.ALREADY_PROCESSED, entries.enter("OLD", entryTime))
+        assertEquals(current, sessions.findActiveByLicensePlate("CURRENT"))
+        assertEquals(1L, sessions.countActiveSessions())
+    }
+
 }

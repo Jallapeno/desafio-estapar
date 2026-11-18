@@ -24,11 +24,13 @@ data class WebhookEventRequest(
     @field:NotNull(message = "event_type is required")
     @field:JsonProperty("event_type")
     val eventType: WebhookEventType? = null,
+    @field:Serdeable.Deserializable(using = WebhookTimestampDeserializer::class)
     @field:JsonProperty("entry_time")
-    @field:Schema(description = "Obrigatório em ENTRY. ISO-8601, precisão máxima de milissegundos.", example = "2025-01-01T10:00:00.000Z")
+    @field:Schema(description = "Obrigatório em ENTRY. ISO-8601, precisão máxima de milissegundos; sem fuso assume UTC (simulador).", example = "2025-01-01T10:00:00.000Z")
     val entryTime: Instant? = null,
+    @field:Serdeable.Deserializable(using = WebhookTimestampDeserializer::class)
     @field:JsonProperty("exit_time")
-    @field:Schema(description = "Obrigatório em EXIT; não pode anteceder a entrada ativa. Precisão de milissegundos.", example = "2025-01-01T11:15:00.000Z")
+    @field:Schema(description = "Obrigatório em EXIT; não pode anteceder a entrada ativa. Precisão de milissegundos; sem fuso assume UTC (simulador).", example = "2025-01-01T11:15:00.000Z")
     val exitTime: Instant? = null,
     @field:Schema(description = "Obrigatória em PARKED; latitude exata da vaga, até seis casas decimais.", example = "-23.561684")
     val lat: BigDecimal? = null,

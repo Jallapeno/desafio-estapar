@@ -19,7 +19,7 @@ import io.micronaut.test.support.TestPropertyProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -125,14 +125,64 @@ class GarageSyncIntegrationTest : TestPropertyProvider {
     }
 
     @Test
-    fun `should log error and not crash startup when simulator remains unavailable`() {
+    fun `should abort startup when simulator remains unavailable`() {
         mockController.failuresRemaining.set(10)
         val listener = GarageSyncStartupListener(syncGarageUseCase)
 
-        assertDoesNotThrow {
+        val failure = assertThrows(IllegalStateException::class.java) {
             listener.onApplicationEvent(StartupEvent(applicationContext))
         }
+        assertEquals("Initial garage synchronization failed", failure.message)
+        assertNotNull(failure.cause)
+        assertTrue(mockController.requestCount.get() > 1)
         assertEquals(0L, sectorRepositoryPort.sumMaxCapacity())
+    }
+
+    @Test
+    fun `should propagate synchronization failure through application context startup`() {
+        mockController.failuresRemaining.set(10)
+        ApplicationContext.builder()
+            .environments("test")
+            .properties(mapOf(
+                "simulator.sync-on-startup" to true,
+                "simulator.base-url" to "http://localhost:${simulatorServer.port}",
+            ))
+            .build().use { context ->
+                assertThrows(RuntimeException::class.java) { context.start() }
+            }
+        assertTrue(mockController.requestCount.get() > 1)
+        assertEquals(0L, sectorRepositoryPort.sumMaxCapacity())
+    }
+
+    @Test
+    fun `should reject invalid configuration without retry or changing stored data`() {
+        syncGarageUseCase.synchronize()
+        parkingSpotRepositoryPort.updateOccupied(spotId = 1L, occupied = true)
+        val requestsBefore = mockController.requestCount.get()
+        mockController.payloadOverride = """
+            {
+              "garage": [{"sector": "A", "basePrice": 99.0, "max_capacity": 1}],
+              "spots": [{"id": 2, "sector": "UNKNOWN", "lat": -23.5, "lng": -46.5}]
+            }
+        """.trimIndent()
+
+        assertThrows(IllegalArgumentException::class.java) { syncGarageUseCase.synchronize() }
+
+        assertEquals(requestsBefore + 1, mockController.requestCount.get())
+        assertEquals(BigDecimal("10.00"), sectorRepositoryPort.findByCode("A")!!.basePrice)
+        assertEquals(100L, sectorRepositoryPort.sumMaxCapacity())
+        assertEquals(1L, parkingSpotRepositoryPort.countAll())
+        assertTrue(parkingSpotRepositoryPort.findById(1L)!!.occupied)
+    }
+
+    @Test
+    fun `should reject missing or empty configuration instead of treating it as success`() {
+        listOf("{}", "{\"garage\": []}", "{\"spots\": []}", "{\"garage\": [], \"spots\": []}").forEach { payload ->
+            mockController.payloadOverride = payload
+            assertThrows(RuntimeException::class.java) { syncGarageUseCase.synchronize() }
+            assertEquals(0L, sectorRepositoryPort.sumMaxCapacity())
+            assertEquals(0L, parkingSpotRepositoryPort.countAll())
+        }
     }
 
     @Singleton
@@ -142,11 +192,13 @@ class GarageSyncIntegrationTest : TestPropertyProvider {
         val failuresRemaining = AtomicInteger(0)
         val requestCount = AtomicInteger(0)
         var basePrice: String = "10.0"
+        var payloadOverride: String? = null
 
         fun reset() {
             failuresRemaining.set(0)
             requestCount.set(0)
             basePrice = "10.0"
+            payloadOverride = null
         }
 
         @Get
@@ -155,6 +207,7 @@ class GarageSyncIntegrationTest : TestPropertyProvider {
             if (failuresRemaining.getAndDecrement() > 0) {
                 return HttpResponse.serverError("Simulator warming up")
             }
+            payloadOverride?.let { return HttpResponse.ok(it) }
             val payload = """
                 {
                   "garage": [

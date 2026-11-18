@@ -21,9 +21,10 @@ class GarageSyncStartupListener(
             syncGarageUseCase.synchronize()
         } catch (ex: Exception) {
             logger.error(
-                "Failed to synchronize initial garage configuration on startup; simulator may be unavailable",
+                "Cannot start application without a synchronized garage configuration",
                 ex,
             )
+            throw IllegalStateException("Initial garage synchronization failed", ex)
         }
     }
 }

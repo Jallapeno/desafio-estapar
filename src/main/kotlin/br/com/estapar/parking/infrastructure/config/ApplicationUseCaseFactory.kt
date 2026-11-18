@@ -1,11 +1,13 @@
 package br.com.estapar.parking.infrastructure.config
 
 import br.com.estapar.parking.application.port.inbound.ProcessEntryUseCase
+import br.com.estapar.parking.application.port.inbound.ProcessExitUseCase
 import br.com.estapar.parking.application.port.inbound.ProcessParkedUseCase
 import br.com.estapar.parking.application.port.inbound.ProcessWebhookEventUseCase
 import br.com.estapar.parking.application.port.inbound.SyncGarageUseCase
 import br.com.estapar.parking.application.port.outbound.TransactionPort
 import br.com.estapar.parking.application.service.EntryEventService
+import br.com.estapar.parking.application.service.ExitEventService
 import br.com.estapar.parking.application.service.GarageSyncService
 import br.com.estapar.parking.application.service.ParkedEventService
 import br.com.estapar.parking.application.service.WebhookEventRouterService
@@ -13,6 +15,7 @@ import br.com.estapar.parking.domain.port.outbound.GarageConfigProviderPort
 import br.com.estapar.parking.domain.port.outbound.ParkingSessionRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.ParkingSpotRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.SectorRepositoryPort
+import br.com.estapar.parking.domain.service.PricingCalculator
 import io.micronaut.context.annotation.Factory
 import jakarta.inject.Singleton
 
@@ -50,8 +53,19 @@ class ApplicationUseCaseFactory {
     )
 
     @Singleton
+    fun processExitUseCase(
+        sectorRepositoryPort: SectorRepositoryPort,
+        spotRepositoryPort: ParkingSpotRepositoryPort,
+        sessionRepositoryPort: ParkingSessionRepositoryPort,
+        transactionPort: TransactionPort,
+    ): ProcessExitUseCase = ExitEventService(
+        sectorRepositoryPort, spotRepositoryPort, sessionRepositoryPort, transactionPort, PricingCalculator(),
+    )
+
+    @Singleton
     fun processWebhookEventUseCase(
         processEntryUseCase: ProcessEntryUseCase,
         processParkedUseCase: ProcessParkedUseCase,
-    ): ProcessWebhookEventUseCase = WebhookEventRouterService(processEntryUseCase, processParkedUseCase)
+        processExitUseCase: ProcessExitUseCase,
+    ): ProcessWebhookEventUseCase = WebhookEventRouterService(processEntryUseCase, processParkedUseCase, processExitUseCase)
 }

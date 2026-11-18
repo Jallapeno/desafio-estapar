@@ -1,8 +1,10 @@
 package br.com.estapar.parking.application.service
 
 import br.com.estapar.parking.application.port.inbound.EntryResult
+import br.com.estapar.parking.application.port.inbound.ExitResult
 import br.com.estapar.parking.application.port.inbound.ParkedResult
 import br.com.estapar.parking.application.port.inbound.ProcessEntryUseCase
+import br.com.estapar.parking.application.port.inbound.ProcessExitUseCase
 import br.com.estapar.parking.application.port.inbound.ProcessParkedUseCase
 import br.com.estapar.parking.application.port.inbound.ProcessWebhookEventUseCase
 import br.com.estapar.parking.application.port.inbound.WebhookEventCommand
@@ -15,6 +17,7 @@ import org.slf4j.LoggerFactory
 class WebhookEventRouterService(
     private val processEntryUseCase: ProcessEntryUseCase,
     private val processParkedUseCase: ProcessParkedUseCase,
+    private val processExitUseCase: ProcessExitUseCase,
 ) : ProcessWebhookEventUseCase {
 
     private val logger = LoggerFactory.getLogger(WebhookEventRouterService::class.java)
@@ -35,7 +38,12 @@ class WebhookEventRouterService(
                     logger.info("Rejected PARKED event: plate={}, reason={}", command.licensePlate, result)
                 }
             }
-            WebhookEventType.EXIT -> logger.debug("Received EXIT event for plate={}", command.licensePlate)
+            WebhookEventType.EXIT -> {
+                val result = processExitUseCase.exit(command.licensePlate, requireNotNull(command.exitTime))
+                if (result == ExitResult.NO_ACTIVE_SESSION) {
+                    logger.info("Acknowledged EXIT without active session: plate={}", command.licensePlate)
+                }
+            }
         }
     }
 }

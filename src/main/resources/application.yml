@@ -3,6 +3,14 @@ micronaut:
     name: estapar-parking-service
   server:
     port: ${SERVER_PORT:3003}
+  router:
+    static-resources:
+      swagger:
+        paths: classpath:META-INF/swagger
+        mapping: /swagger/**
+      swagger-ui:
+        paths: classpath:META-INF/swagger/views/swagger-ui
+        mapping: /swagger-ui/**
   http:
     client:
       connect-timeout: 2s

@@ -57,7 +57,6 @@ class GarageSyncServiceTest {
             }
             override fun findById(id: Long): ParkingSpot? = null
             override fun findByCoordinates(lat: BigDecimal, lng: BigDecimal): ParkingSpot? = null
-            override fun findNearestAvailable(lat: BigDecimal, lng: BigDecimal): ParkingSpot? = null
             override fun updateOccupied(spotId: Long, occupied: Boolean) = Unit
             override fun countAll(): Long = 0L
         }
@@ -124,7 +123,6 @@ class GarageSyncServiceTest {
             override fun upsertAll(spots: List<ParkingSpot>) = Unit
             override fun findById(id: Long): ParkingSpot? = null
             override fun findByCoordinates(lat: BigDecimal, lng: BigDecimal): ParkingSpot? = null
-            override fun findNearestAvailable(lat: BigDecimal, lng: BigDecimal): ParkingSpot? = null
             override fun updateOccupied(spotId: Long, occupied: Boolean) = Unit
             override fun countAll(): Long = 0L
         }

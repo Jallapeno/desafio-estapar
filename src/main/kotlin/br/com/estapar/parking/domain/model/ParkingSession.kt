@@ -28,6 +28,12 @@ data class ParkingSession(
     fun park(spotId: Long, sectorCode: String): ParkingSession {
         require(status != SessionStatus.EXITED) { "Cannot park an already exited session" }
         require(sectorCode.isNotBlank()) { "Sector code must not be blank" }
+        if (status == SessionStatus.PARKED) {
+            require(this.spotId == spotId && this.sectorCode == sectorCode) {
+                "Cannot move an already parked session to another spot or sector"
+            }
+            return this
+        }
         return copy(
             status = SessionStatus.PARKED,
             spotId = spotId,

@@ -1,7 +1,9 @@
 package br.com.estapar.parking.application.service
 
 import br.com.estapar.parking.application.port.inbound.EntryResult
+import br.com.estapar.parking.application.port.inbound.ParkedResult
 import br.com.estapar.parking.application.port.inbound.ProcessEntryUseCase
+import br.com.estapar.parking.application.port.inbound.ProcessParkedUseCase
 import br.com.estapar.parking.application.port.inbound.ProcessWebhookEventUseCase
 import br.com.estapar.parking.application.port.inbound.WebhookEventCommand
 import br.com.estapar.parking.application.port.inbound.WebhookEventType
@@ -12,6 +14,7 @@ import org.slf4j.LoggerFactory
  */
 class WebhookEventRouterService(
     private val processEntryUseCase: ProcessEntryUseCase,
+    private val processParkedUseCase: ProcessParkedUseCase,
 ) : ProcessWebhookEventUseCase {
 
     private val logger = LoggerFactory.getLogger(WebhookEventRouterService::class.java)
@@ -24,7 +27,14 @@ class WebhookEventRouterService(
                     logger.info("Rejected ENTRY because garage has no available capacity: plate={}", command.licensePlate)
                 }
             }
-            WebhookEventType.PARKED -> logger.debug("Received PARKED event for plate={}", command.licensePlate)
+            WebhookEventType.PARKED -> {
+                val result = processParkedUseCase.park(
+                    command.licensePlate, requireNotNull(command.lat), requireNotNull(command.lng),
+                )
+                if (result != ParkedResult.PARKED && result != ParkedResult.ALREADY_PARKED) {
+                    logger.info("Rejected PARKED event: plate={}, reason={}", command.licensePlate, result)
+                }
+            }
             WebhookEventType.EXIT -> logger.debug("Received EXIT event for plate={}", command.licensePlate)
         }
     }

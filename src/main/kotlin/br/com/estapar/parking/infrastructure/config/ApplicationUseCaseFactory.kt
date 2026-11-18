@@ -1,11 +1,13 @@
 package br.com.estapar.parking.infrastructure.config
 
 import br.com.estapar.parking.application.port.inbound.ProcessEntryUseCase
+import br.com.estapar.parking.application.port.inbound.ProcessParkedUseCase
 import br.com.estapar.parking.application.port.inbound.ProcessWebhookEventUseCase
 import br.com.estapar.parking.application.port.inbound.SyncGarageUseCase
 import br.com.estapar.parking.application.port.outbound.TransactionPort
 import br.com.estapar.parking.application.service.EntryEventService
 import br.com.estapar.parking.application.service.GarageSyncService
+import br.com.estapar.parking.application.service.ParkedEventService
 import br.com.estapar.parking.application.service.WebhookEventRouterService
 import br.com.estapar.parking.domain.port.outbound.GarageConfigProviderPort
 import br.com.estapar.parking.domain.port.outbound.ParkingSessionRepositoryPort
@@ -38,6 +40,18 @@ class ApplicationUseCaseFactory {
     ): ProcessEntryUseCase = EntryEventService(sectorRepositoryPort, sessionRepositoryPort, transactionPort)
 
     @Singleton
-    fun processWebhookEventUseCase(processEntryUseCase: ProcessEntryUseCase): ProcessWebhookEventUseCase =
-        WebhookEventRouterService(processEntryUseCase)
+    fun processParkedUseCase(
+        sectorRepositoryPort: SectorRepositoryPort,
+        spotRepositoryPort: ParkingSpotRepositoryPort,
+        sessionRepositoryPort: ParkingSessionRepositoryPort,
+        transactionPort: TransactionPort,
+    ): ProcessParkedUseCase = ParkedEventService(
+        sectorRepositoryPort, spotRepositoryPort, sessionRepositoryPort, transactionPort,
+    )
+
+    @Singleton
+    fun processWebhookEventUseCase(
+        processEntryUseCase: ProcessEntryUseCase,
+        processParkedUseCase: ProcessParkedUseCase,
+    ): ProcessWebhookEventUseCase = WebhookEventRouterService(processEntryUseCase, processParkedUseCase)
 }

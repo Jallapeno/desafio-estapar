@@ -10,7 +10,6 @@ interface ParkingSpotRepositoryPort {
     fun upsertAll(spots: List<ParkingSpot>)
     fun findById(id: Long): ParkingSpot?
     fun findByCoordinates(lat: BigDecimal, lng: BigDecimal): ParkingSpot?
-    fun findNearestAvailable(lat: BigDecimal, lng: BigDecimal): ParkingSpot?
     fun updateOccupied(spotId: Long, occupied: Boolean)
     fun countAll(): Long
 }

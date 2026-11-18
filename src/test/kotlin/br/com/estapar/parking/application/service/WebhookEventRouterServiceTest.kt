@@ -1,7 +1,9 @@
 package br.com.estapar.parking.application.service
 
 import br.com.estapar.parking.application.port.inbound.EntryResult
+import br.com.estapar.parking.application.port.inbound.ParkedResult
 import br.com.estapar.parking.application.port.inbound.ProcessEntryUseCase
+import br.com.estapar.parking.application.port.inbound.ProcessParkedUseCase
 import br.com.estapar.parking.application.port.inbound.WebhookEventCommand
 import br.com.estapar.parking.application.port.inbound.WebhookEventType
 import java.math.BigDecimal
@@ -13,9 +15,13 @@ import org.junit.jupiter.api.Test
 class WebhookEventRouterServiceTest {
 
     private val entries = mutableListOf<Pair<String, Instant>>()
+    private val parked = mutableListOf<Triple<String, BigDecimal, BigDecimal>>()
     private val router = WebhookEventRouterService(ProcessEntryUseCase { plate, time ->
         entries.add(plate to time)
         EntryResult.ACCEPTED
+    }, ProcessParkedUseCase { plate, lat, lng ->
+        parked.add(Triple(plate, lat, lng))
+        ParkedResult.PARKED
     })
 
     @Test
@@ -43,5 +49,6 @@ class WebhookEventRouterServiceTest {
             assertDoesNotThrow { router.process(command) }
         }
         assertEquals(listOf("ZUL0001" to Instant.parse("2025-01-01T12:00:00.000Z")), entries)
+        assertEquals(listOf(Triple("ZUL0001", BigDecimal("-23.561684"), BigDecimal("-46.655981"))), parked)
     }
 }

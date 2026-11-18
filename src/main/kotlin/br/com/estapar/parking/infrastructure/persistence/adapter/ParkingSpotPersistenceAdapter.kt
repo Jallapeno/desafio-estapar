@@ -31,9 +31,6 @@ open class ParkingSpotPersistenceAdapter(
     override fun findByCoordinates(lat: BigDecimal, lng: BigDecimal): ParkingSpot? =
         parkingSpotJdbcRepository.findByLatAndLng(lat, lng)?.toDomain()
 
-    override fun findNearestAvailable(lat: BigDecimal, lng: BigDecimal): ParkingSpot? =
-        parkingSpotJdbcRepository.findNearestAvailable(lat, lng)?.toDomain()
-
     override fun updateOccupied(spotId: Long, occupied: Boolean) {
         parkingSpotJdbcRepository.updateOccupied(spotId, occupied)
     }

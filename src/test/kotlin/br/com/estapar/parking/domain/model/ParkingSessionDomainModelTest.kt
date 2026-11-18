@@ -109,4 +109,18 @@ class ParkingSessionDomainModelTest {
             exited.exit(exitTime = entryTime.plusSeconds(120), chargedAmount = BigDecimal.ZERO)
         }
     }
+    @Test
+    fun `should allow parked replay but reject moving to another spot or sector`() {
+        val parked = ParkingSession(
+            licensePlate = "ZUL0001",
+            status = SessionStatus.ENTERED,
+            entryTime = Instant.parse("2025-01-01T12:00:00Z"),
+            occupancyRateAtEntry = BigDecimal.ZERO,
+            dynamicMultiplier = BigDecimal("0.90"),
+        ).park(1L, "A")
+        assertEquals(parked, parked.park(1L, "A"))
+        assertThrows(IllegalArgumentException::class.java) { parked.park(2L, "A") }
+        assertThrows(IllegalArgumentException::class.java) { parked.park(1L, "B") }
+    }
+
 }

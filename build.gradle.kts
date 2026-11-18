@@ -84,10 +84,6 @@ micronaut {
     }
 }
 
-tasks.named<io.micronaut.gradle.docker.MicronautDockerfile>("dockerfile") {
-    baseImage = "eclipse-temurin:21-jre"
-}
-
 // Cobertura apenas do bytecode da aplicação; metadados gerados pelo Micronaut/KSP são excluídos.
 jacoco {
     toolVersion = "0.8.13"

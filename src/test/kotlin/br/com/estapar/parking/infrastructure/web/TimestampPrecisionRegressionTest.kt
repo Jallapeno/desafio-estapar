@@ -45,7 +45,7 @@ class TimestampPrecisionRegressionTest {
     }
 
     @Test fun `should reject submillisecond ENTRY instead of storing truncated start`() {
-        listOf("2025-01-01T12:00:00.000000001Z", "2025-01-01T12:00:00.123456Z").forEach {
+        listOf("2025-01-01T12:00:00.000000001Z", "2025-01-01T12:00:00.123456Z", "2025-01-01T12:00:00.123456").forEach {
             assertEquals(400, event("ENTRY", it))
             assertEquals(0L, sessionJdbc.count())
         }
@@ -58,6 +58,20 @@ class TimestampPrecisionRegressionTest {
         assertEquals(before, sessions.findActiveByLicensePlate("PRECISION"))
         assertNull(before.exitTime)
         assertNull(before.chargedAmount)
+    }
+
+    @Test fun `should deduplicate the same visit across simulator and zoned timestamps`() {
+        assertEquals(200, event("ENTRY", "2025-01-01T12:00:00.123"))
+        assertEquals(200, event("ENTRY", "2025-01-01T12:00:00.123Z"))
+        assertEquals(1L, sessionJdbc.count())
+        val id = sessions.findActiveByLicensePlate("PRECISION")!!.id!!
+        assertEquals(200, event("EXIT", "2025-01-01T12:30:00.123"))
+        assertEquals(200, event("ENTRY", "2025-01-01T12:00:00.123Z"))
+        assertEquals(1L, sessionJdbc.count())
+        val saved = sessionJdbc.findById(id).orElseThrow()
+        assertEquals(Instant.parse("2025-01-01T12:00:00.123Z"), saved.entryTime)
+        assertEquals(Instant.parse("2025-01-01T12:30:00.123Z"), saved.exitTime)
+        assertEquals(BigDecimal("0.00"), saved.chargedAmount)
     }
 
     @Test fun `should keep exact thirty minutes free and charge first millisecond beyond tolerance`() {

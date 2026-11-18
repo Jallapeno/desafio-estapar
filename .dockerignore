@@ -1,0 +1,8 @@
+**
+!build.gradle.kts
+!settings.gradle.kts
+!gradle.properties
+!openapi.properties
+!src/
+!src/main/
+!src/main/**

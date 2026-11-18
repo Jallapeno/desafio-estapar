@@ -4,12 +4,44 @@ Backend em Java 21 e Kotlin 2.1.21, com Micronaut, MySQL 8 e Flyway. Recebe os e
 
 ## Requisitos
 
-- JDK 21 disponível em `JAVA_HOME` e no `PATH`.
+- Para executar a API fora do Docker: JDK 21 disponível em `JAVA_HOME` e no `PATH`.
 - Docker Engine ou Docker Desktop com containers Linux em execução.
-- Portas 3003 (aplicação), 8080 (simulador) e 3306 (MySQL) disponíveis.
+- Portas 3003 (aplicação), 8080 (simulador no Compose) e 3306 (MySQL) disponíveis. No fluxo manual com rede host, o simulador usa a porta 3000.
 - Gradle Wrapper incluído no repositório: não é necessário instalar Gradle globalmente.
 
 A plataforma Micronaut está fixada em `4.7.6` no `gradle.properties`; os módulos resolvidos pelo BOM podem ter versões distintas. O plugin Gradle Micronaut é `4.5.3`.
+
+## Execução completa com Docker Compose
+
+Na raiz do projeto, copie o exemplo e defina `DB_PASSWORD` e `DB_ROOT_PASSWORD` no `.env`:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d --build --wait
+```
+
+O build compila a API em um estágio com Gradle 8.12.1/JDK 21 e executa o JAR em outro com JRE 21, como usuário sem privilégios. Não é necessário instalar Java ou Gradle no host. O contexto de build inclui apenas os fontes de produção e os arquivos necessários à compilação; `.env`, histórico Git e artefatos locais ficam fora da imagem.
+
+O Compose sobe MySQL, simulador real `cfontes0estapar/garage-sim:1.0.0` e API na mesma rede. A API aguarda o healthcheck do MySQL e usa `http://simulator:3000` para sincronizar a garagem, com as retentativas de inicialização já existentes. O simulador recebe `CLIENT_WEBHOOK_URL=http://api:3003/webhook`. O healthcheck da API verifica o contrato OpenAPI após a inicialização. Este fluxo não utiliza `--network host` nem exige habilitar host networking no Docker Desktop.
+
+- [Swagger UI](http://localhost:3003/swagger-ui/index.html)
+- [Receita do setor A no dia atual UTC](http://localhost:3003/revenue?sector=A)
+- Portas publicadas: `SERVER_PORT` (padrão 3003), `SIMULATOR_PORT` (8080) e `DB_PORT` (3306). Entre containers, as portas são fixas: API 3003, simulador 3000 e MySQL 3306; `DB_HOST` e `SIMULATOR_URL` do `.env` são usados apenas no fluxo com API local.
+
+Para conferir os serviços e acompanhar os eventos:
+
+```powershell
+docker compose ps
+docker compose logs --tail=100 api simulator
+```
+
+Para parar os três serviços preservando o volume do banco:
+
+```powershell
+docker compose down
+```
+
+O fluxo abaixo é a alternativa para executar a API diretamente na JVM. Use um fluxo por vez para evitar disputa pelas mesmas portas.
 
 ## Execução local no PowerShell
 
@@ -40,12 +72,13 @@ Inicie o simulador fornecido pelo desafio antes da aplicação:
 
 ```powershell
 docker run -d --name estapar-simulator --network host cfontes0estapar/garage-sim:1.0.0
+$env:SIMULATOR_URL="http://localhost:3000"
 .\gradlew.bat run
 ```
 
 No Docker Desktop, a rede host exige versão 4.34 ou posterior e a opção **Settings → Resources → Network → Enable host networking**, com reinício do Docker Desktop. Isso permite ao container alcançar o webhook no host. Veja a [documentação oficial da rede host](https://docs.docker.com/engine/network/drivers/host/).
 
-A aplicação busca `GET http://localhost:8080/garage`, valida a configuração e persiste setores/vagas. Falhas transitórias recebem retentativas exponenciais. Se a sincronização inicial não terminar, a inicialização falha: confira os logs, corrija a dependência e execute novamente. Reiniciar preserva a ocupação das vagas no upsert. A configuração recebida é um snapshot completo: pode acrescentar setores/vagas e atualizar preços/capacidade, mas não remover identidades nem mudar setor/coordenadas de vagas existentes. Reduções abaixo da ocupação ativa são rejeitadas. Essas validações usam o lock dos eventos e antecedem qualquer escrita; uma configuração incompatível faz a sincronização falhar sem alterar dados ou histórico.
+Nesta execução com rede host, a imagem real escuta em 3000; a variável acima substitui o valor do `.env`. A aplicação busca `GET http://localhost:3000/garage`, valida a configuração e persiste setores/vagas. Falhas transitórias recebem retentativas exponenciais. Se a sincronização inicial não terminar, a inicialização falha: confira os logs, corrija a dependência e execute novamente. Reiniciar preserva a ocupação das vagas no upsert. A configuração recebida é um snapshot completo: pode acrescentar setores/vagas e atualizar preços/capacidade, mas não remover identidades nem mudar setor/coordenadas de vagas existentes. Reduções abaixo da ocupação ativa são rejeitadas. Essas validações usam o lock dos eventos e antecedem qualquer escrita; uma configuração incompatível faz a sincronização falhar sem alterar dados ou histórico.
 
 Em Linux/macOS, use `./gradlew` no lugar de `.\gradlew.bat`. Para importar o exemplo `.env` em um shell POSIX, use `set -a`, depois `. ./.env` e então `set +a`.
 
@@ -64,6 +97,7 @@ docker compose down
 | `DB_HOST`, `DB_PORT`, `DB_NAME` | `localhost`, `3306`, `estapar_garage` |
 | `DB_USER`, `DB_PASSWORD` | Obrigatórias para a aplicação |
 | `DB_ROOT_PASSWORD` | Obrigatória para inicializar o MySQL no Compose |
+| `SIMULATOR_PORT` | `8080`, porta publicada do simulador no Compose |
 | `SIMULATOR_URL` | `http://localhost:8080` |
 | `SIMULATOR_SYNC_ON_STARTUP` | `true`; desabilitada nos testes isolados |
 | `SIMULATOR_RETRY_ATTEMPTS` | `5` |
@@ -105,6 +139,8 @@ Content-Type: application/json
 Use no `PARKED` as coordenadas exatas recebidas do simulador; o exemplo acima não garante uma vaga na configuração efetiva.
 
 Payloads válidos recebem HTTP 200, inclusive duplicatas e rejeições de negócio como garagem cheia, vaga ocupada ou coordenada desconhecida. Essas rejeições são registradas em log e não alteram os dados. JSON inválido, campos obrigatórios ausentes, coordenadas fora do intervalo/precisão e saída anterior à entrada ativa recebem HTTP 400. Falhas inesperadas de infraestrutura não são convertidas em sucesso.
+
+A imagem real do simulador envia datas sem fuso (`2026-11-18T18:02:01`); somente nos campos `entry_time` e `exit_time` do webhook, esse formato é interpretado como UTC. Datas com `Z` ou offset explícito continuam aceitas, sem alteração no instante representado.
 
 ENTRY e EXIT aceitam timestamps com precisão de milissegundos, compatível com `DATETIME(3)`; frações menores retornam HTTP 400 antes de qualquer alteração. Casas adicionais contendo apenas zeros são aceitas.
 

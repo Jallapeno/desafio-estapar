@@ -1,11 +1,14 @@
 package br.com.estapar.parking.infrastructure.config
 
+import br.com.estapar.parking.application.port.inbound.ProcessEntryUseCase
 import br.com.estapar.parking.application.port.inbound.ProcessWebhookEventUseCase
 import br.com.estapar.parking.application.port.inbound.SyncGarageUseCase
 import br.com.estapar.parking.application.port.outbound.TransactionPort
+import br.com.estapar.parking.application.service.EntryEventService
 import br.com.estapar.parking.application.service.GarageSyncService
 import br.com.estapar.parking.application.service.WebhookEventRouterService
 import br.com.estapar.parking.domain.port.outbound.GarageConfigProviderPort
+import br.com.estapar.parking.domain.port.outbound.ParkingSessionRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.ParkingSpotRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.SectorRepositoryPort
 import io.micronaut.context.annotation.Factory
@@ -28,6 +31,13 @@ class ApplicationUseCaseFactory {
     )
 
     @Singleton
-    fun processWebhookEventUseCase(): ProcessWebhookEventUseCase =
-        WebhookEventRouterService()
+    fun processEntryUseCase(
+        sectorRepositoryPort: SectorRepositoryPort,
+        sessionRepositoryPort: ParkingSessionRepositoryPort,
+        transactionPort: TransactionPort,
+    ): ProcessEntryUseCase = EntryEventService(sectorRepositoryPort, sessionRepositoryPort, transactionPort)
+
+    @Singleton
+    fun processWebhookEventUseCase(processEntryUseCase: ProcessEntryUseCase): ProcessWebhookEventUseCase =
+        WebhookEventRouterService(processEntryUseCase)
 }

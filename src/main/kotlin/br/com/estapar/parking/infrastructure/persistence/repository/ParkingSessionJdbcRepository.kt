@@ -23,6 +23,9 @@ interface ParkingSessionJdbcRepository : CrudRepository<ParkingSessionEntity, Lo
     )
     fun findActiveByLicensePlate(licensePlate: String): ParkingSessionEntity?
 
+    @Query("SELECT COUNT(*) FROM parking_sessions WHERE license_plate = :licensePlate AND entry_time = :entryTime")
+    fun countByLicensePlateAndEntryTime(licensePlate: String, entryTime: Instant): Long
+
     @Query("SELECT COUNT(*) FROM parking_sessions WHERE status IN ('ENTERED', 'PARKED')")
     fun countActiveSessions(): Long
 

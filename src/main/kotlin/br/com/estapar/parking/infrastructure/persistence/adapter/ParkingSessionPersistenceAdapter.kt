@@ -5,6 +5,7 @@ import br.com.estapar.parking.domain.port.outbound.ParkingSessionRepositoryPort
 import br.com.estapar.parking.infrastructure.persistence.entity.ParkingSessionEntity
 import br.com.estapar.parking.infrastructure.persistence.repository.ParkingSessionJdbcRepository
 import jakarta.inject.Singleton
+import java.time.Instant
 
 @Singleton
 open class ParkingSessionPersistenceAdapter(
@@ -23,6 +24,9 @@ open class ParkingSessionPersistenceAdapter(
 
     override fun findActiveByLicensePlate(licensePlate: String): ParkingSession? =
         parkingSessionJdbcRepository.findActiveByLicensePlate(licensePlate)?.toDomain()
+
+    override fun existsByLicensePlateAndEntryTime(licensePlate: String, entryTime: Instant): Boolean =
+        parkingSessionJdbcRepository.countByLicensePlateAndEntryTime(licensePlate, entryTime) > 0
 
     override fun countActiveSessions(): Long =
         parkingSessionJdbcRepository.countActiveSessions()

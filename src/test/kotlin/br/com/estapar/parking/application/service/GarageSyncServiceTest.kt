@@ -2,20 +2,30 @@ package br.com.estapar.parking.application.service
 
 import br.com.estapar.parking.application.port.outbound.TransactionPort
 import br.com.estapar.parking.domain.model.GarageConfiguration
+import br.com.estapar.parking.domain.model.ParkingSession
 import br.com.estapar.parking.domain.model.ParkingSpot
 import br.com.estapar.parking.domain.model.Sector
 import br.com.estapar.parking.domain.port.outbound.GarageConfigProviderPort
+import br.com.estapar.parking.domain.port.outbound.ParkingSessionRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.ParkingSpotRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.SectorRepositoryPort
 import br.com.estapar.parking.infrastructure.simulator.dto.GarageConfigResponse
 import io.micronaut.serde.ObjectMapper
+import java.math.BigDecimal
+import java.time.Instant
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
-import java.math.BigDecimal
 
 class GarageSyncServiceTest {
+    private val sessions = object : ParkingSessionRepositoryPort {
+        override fun save(session: ParkingSession) = session
+        override fun findActiveByLicensePlate(licensePlate: String): ParkingSession? = null
+        override fun existsByLicensePlateAndEntryTime(licensePlate: String, entryTime: Instant) = false
+        override fun countActiveSessions() = 0L
+    }
+
 
     @Test
     fun `should fetch configuration outside transaction and persist sectors and spots atomically`() {
@@ -55,13 +65,14 @@ class GarageSyncServiceTest {
             override fun upsertAll(spots: List<ParkingSpot>) {
                 events.add("upsert_spots:${spots.size}")
             }
+            override fun findAll(): List<ParkingSpot> = emptyList()
             override fun findById(id: Long): ParkingSpot? = null
             override fun findByCoordinates(lat: BigDecimal, lng: BigDecimal): ParkingSpot? = null
             override fun updateOccupied(spotId: Long, occupied: Boolean) = Unit
             override fun countAll(): Long = 0L
         }
 
-        val service = GarageSyncService(configProvider, sectorPort, spotPort, transactionPort)
+        val service = GarageSyncService(configProvider, sectorPort, spotPort, transactionPort, sessions)
         service.synchronize()
 
         assertEquals(
@@ -121,13 +132,14 @@ class GarageSyncServiceTest {
         }
         val spotPort = object : ParkingSpotRepositoryPort {
             override fun upsertAll(spots: List<ParkingSpot>) = Unit
+            override fun findAll(): List<ParkingSpot> = emptyList()
             override fun findById(id: Long): ParkingSpot? = null
             override fun findByCoordinates(lat: BigDecimal, lng: BigDecimal): ParkingSpot? = null
             override fun updateOccupied(spotId: Long, occupied: Boolean) = Unit
             override fun countAll(): Long = 0L
         }
 
-        val service = GarageSyncService(failingProvider, sectorPort, spotPort, transactionPort)
+        val service = GarageSyncService(failingProvider, sectorPort, spotPort, transactionPort, sessions)
 
         assertThrows(IllegalStateException::class.java) {
             service.synchronize()

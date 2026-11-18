@@ -45,7 +45,7 @@ docker run -d --name estapar-simulator --network host cfontes0estapar/garage-sim
 
 No Docker Desktop, a rede host exige versão 4.34 ou posterior e a opção **Settings → Resources → Network → Enable host networking**, com reinício do Docker Desktop. Isso permite ao container alcançar o webhook no host. Veja a [documentação oficial da rede host](https://docs.docker.com/engine/network/drivers/host/).
 
-A aplicação busca `GET http://localhost:8080/garage`, valida a configuração e persiste setores/vagas. Falhas transitórias recebem retentativas exponenciais. Se a sincronização inicial não terminar, a inicialização falha: confira os logs, corrija a dependência e execute novamente. Reiniciar preserva a ocupação das vagas no upsert.
+A aplicação busca `GET http://localhost:8080/garage`, valida a configuração e persiste setores/vagas. Falhas transitórias recebem retentativas exponenciais. Se a sincronização inicial não terminar, a inicialização falha: confira os logs, corrija a dependência e execute novamente. Reiniciar preserva a ocupação das vagas no upsert. A configuração recebida é um snapshot completo: pode acrescentar setores/vagas e atualizar preços/capacidade, mas não remover identidades nem mudar setor/coordenadas de vagas existentes. Reduções abaixo da ocupação ativa são rejeitadas. Essas validações usam o lock dos eventos e antecedem qualquer escrita; uma configuração incompatível faz a sincronização falhar sem alterar dados ou histórico.
 
 Em Linux/macOS, use `./gradlew` no lugar de `.\gradlew.bat`. Para importar o exemplo `.env` em um shell POSIX, use `set -a`, depois `. ./.env` e então `set +a`.
 
@@ -96,6 +96,8 @@ Use no `PARKED` as coordenadas exatas recebidas do simulador; o exemplo acima n�
 
 Payloads válidos recebem HTTP 200, inclusive duplicatas e rejeições de negócio como garagem cheia, vaga ocupada ou coordenada desconhecida. Essas rejeições são registradas em log e não alteram os dados. JSON inválido, campos obrigatórios ausentes, coordenadas fora do intervalo/precisão e saída anterior à entrada ativa recebem HTTP 400. Falhas inesperadas de infraestrutura não são convertidas em sucesso.
 
+ENTRY e EXIT aceitam timestamps com precisão de milissegundos, compatível com `DATETIME(3)`; frações menores retornam HTTP 400 antes de qualquer alteração. Casas adicionais contendo apenas zeros são aceitas.
+
 A placa é normalizada com trim e maiúsculas. Sessões anteriores encerradas são mantidas para permitir reentrada da mesma placa.
 
 ### Receita
@@ -135,7 +137,7 @@ curl.exe 'http://localhost:3003/revenue?sector=A&date=2025-01-01'
 - Coordenadas são `DECIMAL(10,6)`/`BigDecimal`, sem fallback por proximidade. Uma sessão estacionada não pode mudar de vaga por um segundo `PARKED`.
 - Saída sem `PARKED` usa o primeiro setor por código, registra-o na sessão e aplica a mesma tolerância. É uma premissa do projeto: o PDF não define esse setor padrão.
 - A receita pertence ao setor e ao dia UTC da saída, somando somente sessões `EXITED`.
-- O contrato não traz identificador único dos eventos nem timestamp no `PARKED`. A idempotência é baseada no estado da sessão; não há garantia de deduplicação global de eventos antigos entre visitas distintas. Um `EXIT` anterior à nova entrada é rejeitado.
+- O ENTRY é deduplicado por placa e horário de entrada, inclusive após encerrar a visita; um horário novo permite nova visita. A verificação histórica ocorre sob o mesmo lock dos setores. O contrato não traz identificador único dos eventos nem timestamp no `PARKED`; para os demais eventos, a idempotência depende do estado da sessão e não garante deduplicação global entre visitas distintas. Um `EXIT` anterior à nova entrada é rejeitado.
 
 ## Arquitetura
 

@@ -32,7 +32,9 @@ class ApplicationUseCaseFactory {
         sectorRepositoryPort: SectorRepositoryPort,
         parkingSpotRepositoryPort: ParkingSpotRepositoryPort,
         transactionPort: TransactionPort,
+        sessionRepositoryPort: ParkingSessionRepositoryPort,
     ): SyncGarageUseCase = GarageSyncService(
+        sessionRepositoryPort = sessionRepositoryPort,
         garageConfigProviderPort = garageConfigProviderPort,
         sectorRepositoryPort = sectorRepositoryPort,
         parkingSpotRepositoryPort = parkingSpotRepositoryPort,

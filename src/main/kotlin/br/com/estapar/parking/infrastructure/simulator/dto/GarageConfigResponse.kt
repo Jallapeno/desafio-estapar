@@ -10,8 +10,8 @@ import java.math.BigDecimal
 
 @Serdeable
 data class GarageConfigResponse(
-    val garage: List<GarageSectorDto> = emptyList(),
-    val spots: List<GarageSpotDto> = emptyList(),
+    val garage: List<GarageSectorDto>,
+    val spots: List<GarageSpotDto>,
 ) {
     fun toDomain(): GarageConfiguration = GarageConfiguration(
         sectors = garage.map { it.toDomain() },

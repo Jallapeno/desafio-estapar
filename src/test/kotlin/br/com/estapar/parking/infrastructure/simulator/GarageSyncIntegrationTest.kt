@@ -19,7 +19,7 @@ import io.micronaut.test.support.TestPropertyProvider
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -125,13 +125,16 @@ class GarageSyncIntegrationTest : TestPropertyProvider {
     }
 
     @Test
-    fun `should log error and not crash startup when simulator remains unavailable`() {
+    fun `should abort startup when simulator remains unavailable`() {
         mockController.failuresRemaining.set(10)
         val listener = GarageSyncStartupListener(syncGarageUseCase)
 
-        assertDoesNotThrow {
+        val failure = assertThrows(IllegalStateException::class.java) {
             listener.onApplicationEvent(StartupEvent(applicationContext))
         }
+        assertEquals("Initial garage synchronization failed", failure.message)
+        assertNotNull(failure.cause)
+        assertTrue(mockController.requestCount.get() > 1)
         assertEquals(0L, sectorRepositoryPort.sumMaxCapacity())
     }
 

@@ -4,21 +4,26 @@ Backend em Java 21 e Kotlin 2.1.21, com Micronaut, MySQL 8 e Flyway. Recebe os e
 
 ## Requisitos
 
-- Para executar a API fora do Docker: JDK 21 disponível em `JAVA_HOME` e no `PATH`.
-- Docker Engine ou Docker Desktop com containers Linux em execução.
+- Git para clonar o repositório e Docker Engine/Docker Desktop com containers Linux e Docker Compose v2 com suporte a `--wait`.
+- Acesso à internet no primeiro build para baixar as imagens e dependências.
 - Portas 3003 (aplicação), 8080 (simulador no Compose) e 3306 (MySQL) disponíveis. No fluxo manual com rede host, o simulador usa a porta 3000.
-- Gradle Wrapper incluído no repositório: não é necessário instalar Gradle globalmente.
+- O fluxo Docker não exige Java, Kotlin, Gradle ou MySQL instalados na máquina. Para a alternativa com API na JVM, use JDK 21 em `JAVA_HOME` e no `PATH`; o Gradle Wrapper está incluído.
 
 A plataforma Micronaut está fixada em `4.7.6` no `gradle.properties`; os módulos resolvidos pelo BOM podem ter versões distintas. O plugin Gradle Micronaut é `4.5.3`.
 
 ## Execução completa com Docker Compose
 
-Na raiz do projeto, copie o exemplo e defina `DB_PASSWORD` e `DB_ROOT_PASSWORD` no `.env`:
+Após clonar o repositório e entrar em sua pasta, execute um único comando (PowerShell, bash ou zsh):
 
-```powershell
-Copy-Item .env.example .env
+```sh
 docker compose up -d --build --wait
 ```
+
+Não é necessário criar `.env`, editar arquivos ou inicializar o banco manualmente. A primeira execução compila a aplicação, cria o banco e aplica as migrations automaticamente; pode levar alguns minutos. Quando o comando terminar com sucesso, abra o [Swagger UI](http://localhost:3003/swagger-ui/index.html).
+
+O Compose usa credenciais de demonstração para avaliação local: usuário `estapar`, senha `estapar_local` e senha de root `estapar_root_local`. As portas publicadas ficam vinculadas a `127.0.0.1`. Para personalizar os valores, copie `.env.example` para `.env` opcionalmente. Credenciais de um volume já inicializado devem corresponder às usadas na sua criação; editar `.env` não altera as senhas existentes no MySQL.
+
+A imagem fornecida do simulador é `linux/amd64`; essa plataforma está explícita no Compose. Em computadores ARM, o Docker precisa oferecer emulação de amd64. A validação descrita neste repositório foi executada no Docker Desktop/Windows com containers Linux amd64.
 
 O build compila a API em um estágio com Gradle 8.12.1/JDK 21 e executa o JAR em outro com JRE 21, como usuário sem privilégios. Não é necessário instalar Java ou Gradle no host. O contexto de build inclui apenas os fontes de produção e os arquivos necessários à compilação; `.env`, histórico Git e artefatos locais ficam fora da imagem.
 
@@ -95,8 +100,8 @@ docker compose down
 |---|---|
 | `SERVER_PORT` | `3003`, contrato do webhook |
 | `DB_HOST`, `DB_PORT`, `DB_NAME` | `localhost`, `3306`, `estapar_garage` |
-| `DB_USER`, `DB_PASSWORD` | Obrigatórias para a aplicação |
-| `DB_ROOT_PASSWORD` | Obrigatória para inicializar o MySQL no Compose |
+| `DB_USER`, `DB_PASSWORD` | Compose: `estapar` / `estapar_local`; obrigatórias ao iniciar a JVM diretamente |
+| `DB_ROOT_PASSWORD` | Compose: `estapar_root_local`, usada na primeira inicialização do volume |
 | `SIMULATOR_PORT` | `8080`, porta publicada do simulador no Compose |
 | `SIMULATOR_URL` | `http://localhost:8080` |
 | `SIMULATOR_SYNC_ON_STARTUP` | `true`; desabilitada nos testes isolados |

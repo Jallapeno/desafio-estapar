@@ -1,4 +1,5 @@
 plugins {
+    jacoco
     id("org.jetbrains.kotlin.jvm") version "2.1.21"
     id("org.jetbrains.kotlin.plugin.allopen") version "2.1.21"
     id("com.google.devtools.ksp") version "2.1.21-2.0.1"
@@ -82,4 +83,40 @@ micronaut {
 
 tasks.named<io.micronaut.gradle.docker.MicronautDockerfile>("dockerfile") {
     baseImage = "eclipse-temurin:21-jre"
+}
+
+// Cobertura apenas do bytecode da aplicação; metadados gerados pelo Micronaut/KSP são excluídos.
+jacoco {
+    toolVersion = "0.8.13"
+}
+
+val coverageClasses = sourceSets.main.get().output.asFileTree.matching {
+    exclude("**/*\$Definition*", "**/*\$Introspection*", "**/*\$Intercepted*", "**/*\$Exec*")
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    classDirectories.setFrom(coverageClasses)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.jacocoTestReport)
+    classDirectories.setFrom(coverageClasses)
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.85".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(tasks.jacocoTestCoverageVerification)
 }

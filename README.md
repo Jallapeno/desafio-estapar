@@ -96,6 +96,8 @@ Use no `PARKED` as coordenadas exatas recebidas do simulador; o exemplo acima n�
 
 Payloads válidos recebem HTTP 200, inclusive duplicatas e rejeições de negócio como garagem cheia, vaga ocupada ou coordenada desconhecida. Essas rejeições são registradas em log e não alteram os dados. JSON inválido, campos obrigatórios ausentes, coordenadas fora do intervalo/precisão e saída anterior à entrada ativa recebem HTTP 400. Falhas inesperadas de infraestrutura não são convertidas em sucesso.
 
+ENTRY e EXIT aceitam timestamps com precisão de milissegundos, compatível com `DATETIME(3)`; frações menores retornam HTTP 400 antes de qualquer alteração. Casas adicionais contendo apenas zeros são aceitas.
+
 A placa é normalizada com trim e maiúsculas. Sessões anteriores encerradas são mantidas para permitir reentrada da mesma placa.
 
 ### Receita

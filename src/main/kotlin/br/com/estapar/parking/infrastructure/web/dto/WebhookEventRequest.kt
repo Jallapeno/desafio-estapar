@@ -47,12 +47,18 @@ data class WebhookEventRequest(
 
     private fun validateEventFields(type: WebhookEventType) {
         when (type) {
-            WebhookEventType.ENTRY -> requireNotNull(entryTime) { "entry_time is required for ENTRY events" }
+            WebhookEventType.ENTRY -> validateTimestamp(entryTime, "entry_time")
             WebhookEventType.PARKED -> {
                 requireNotNull(lat) { "lat is required for PARKED events" }
                 requireNotNull(lng) { "lng is required for PARKED events" }
             }
-            WebhookEventType.EXIT -> requireNotNull(exitTime) { "exit_time is required for EXIT events" }
+            WebhookEventType.EXIT -> validateTimestamp(exitTime, "exit_time")
         }
     }
+
+    private fun validateTimestamp(value: Instant?, field: String) {
+        requireNotNull(value) { "$field is required" }
+        require(value.nano % 1_000_000 == 0) { "$field must have millisecond precision" }
+    }
+
 }

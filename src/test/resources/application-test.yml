@@ -10,3 +10,10 @@ datasources:
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
     db-type: mysql
     dialect: MYSQL
+
+simulator:
+  sync-on-startup: false
+  retry:
+    attempts: 3
+    delay: 20ms
+    multiplier: 1.0

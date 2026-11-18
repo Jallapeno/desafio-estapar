@@ -4,6 +4,7 @@ import br.com.estapar.parking.domain.model.ParkingSpot
 import br.com.estapar.parking.domain.model.Sector
 import br.com.estapar.parking.domain.port.outbound.ParkingSpotRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.SectorRepositoryPort
+import br.com.estapar.parking.infrastructure.persistence.repository.ParkingSessionJdbcRepository
 import br.com.estapar.parking.infrastructure.persistence.repository.ParkingSpotJdbcRepository
 import br.com.estapar.parking.infrastructure.persistence.repository.SectorJdbcRepository
 import io.micronaut.data.jdbc.runtime.JdbcOperations
@@ -12,6 +13,7 @@ import io.micronaut.transaction.TransactionOperations
 import jakarta.inject.Inject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -35,6 +37,9 @@ class GaragePersistenceIntegrationTest {
     lateinit var parkingSpotJdbcRepository: ParkingSpotJdbcRepository
 
     @Inject
+    lateinit var parkingSessionJdbcRepository: ParkingSessionJdbcRepository
+
+    @Inject
     lateinit var jdbcOperations: JdbcOperations
 
     @Inject
@@ -42,6 +47,7 @@ class GaragePersistenceIntegrationTest {
 
     @BeforeEach
     fun cleanup() {
+        parkingSessionJdbcRepository.deleteAll()
         parkingSpotJdbcRepository.deleteAll()
         sectorJdbcRepository.deleteAll()
     }
@@ -98,7 +104,7 @@ class GaragePersistenceIntegrationTest {
     }
 
     @Test
-    fun `should preserve spot occupancy on idempotent upsert and find nearest available spot`() {
+    fun `should preserve spot occupancy on idempotent upsert and require exact coordinates`() {
         val sectorA = Sector(code = "A", basePrice = BigDecimal("10.00"), maxCapacity = 50)
         val sectorB = Sector(code = "B", basePrice = BigDecimal("15.00"), maxCapacity = 50)
         sectorRepositoryPort.upsertAll(listOf(sectorA, sectorB))
@@ -125,13 +131,11 @@ class GaragePersistenceIntegrationTest {
         assertNotNull(reloadedSpot1)
         assertTrue(reloadedSpot1!!.occupied)
 
-        val nearest = parkingSpotRepositoryPort.findNearestAvailable(
+        val unknown = parkingSpotRepositoryPort.findByCoordinates(
             lat = BigDecimal("-23.561685"),
             lng = BigDecimal("-46.655982"),
         )
-        assertNotNull(nearest)
-        assertEquals(2L, nearest!!.id)
-        assertEquals("B", nearest.sectorCode)
+        assertNull(unknown)
     }
 
     @Test

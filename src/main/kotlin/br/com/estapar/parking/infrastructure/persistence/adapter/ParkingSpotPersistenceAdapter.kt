@@ -25,14 +25,14 @@ open class ParkingSpotPersistenceAdapter(
         }
     }
 
+    override fun findAll(): List<ParkingSpot> =
+        parkingSpotJdbcRepository.findAll().map { it.toDomain() }
+
     override fun findById(id: Long): ParkingSpot? =
         parkingSpotJdbcRepository.findById(id).orElse(null)?.toDomain()
 
     override fun findByCoordinates(lat: BigDecimal, lng: BigDecimal): ParkingSpot? =
         parkingSpotJdbcRepository.findByLatAndLng(lat, lng)?.toDomain()
-
-    override fun findNearestAvailable(lat: BigDecimal, lng: BigDecimal): ParkingSpot? =
-        parkingSpotJdbcRepository.findNearestAvailable(lat, lng)?.toDomain()
 
     override fun updateOccupied(spotId: Long, occupied: Boolean) {
         parkingSpotJdbcRepository.updateOccupied(spotId, occupied)

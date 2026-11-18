@@ -1,4 +1,5 @@
 plugins {
+    jacoco
     id("org.jetbrains.kotlin.jvm") version "2.1.21"
     id("org.jetbrains.kotlin.plugin.allopen") version "2.1.21"
     id("com.google.devtools.ksp") version "2.1.21-2.0.1"
@@ -17,6 +18,8 @@ repositories {
 }
 
 dependencies {
+    ksp("io.micronaut.openapi:micronaut-openapi")
+    implementation("io.micronaut.openapi:micronaut-openapi-annotations")
     ksp("io.micronaut.data:micronaut-data-processor")
     ksp("io.micronaut:micronaut-http-validation")
     ksp("io.micronaut.serde:micronaut-serde-processor")
@@ -41,6 +44,7 @@ dependencies {
     runtimeOnly("org.yaml:snakeyaml")
 
     testImplementation("io.micronaut:micronaut-http-client")
+    testImplementation("org.yaml:snakeyaml")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mysql")
     testImplementation("org.testcontainers:testcontainers")
@@ -82,4 +86,54 @@ micronaut {
 
 tasks.named<io.micronaut.gradle.docker.MicronautDockerfile>("dockerfile") {
     baseImage = "eclipse-temurin:21-jre"
+}
+
+// Cobertura apenas do bytecode da aplicação; metadados gerados pelo Micronaut/KSP são excluídos.
+jacoco {
+    toolVersion = "0.8.13"
+}
+
+val coverageClasses = sourceSets.main.get().output.asFileTree.matching {
+    exclude("**/*\$Definition*", "**/*\$Introspection*", "**/*\$Intercepted*", "**/*\$Exec*")
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    classDirectories.setFrom(coverageClasses)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.jacocoTestReport)
+    classDirectories.setFrom(coverageClasses)
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.85".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(tasks.jacocoTestCoverageVerification)
+}
+
+ksp {
+    arg("micronaut.openapi.project.dir", projectDir.toString())
+    arg("micronaut.openapi.views.spec", "swagger-ui.enabled=true")
+}
+
+tasks.matching { it.name == "kspKotlin" }.configureEach {
+    inputs.file("openapi.properties")
+}
+
+// Test-only controllers must not shadow the application OpenAPI resource on the test classpath.
+configurations.matching { it.name == "kspTest" }.configureEach {
+    exclude(group = "io.micronaut.openapi", module = "micronaut-openapi")
 }

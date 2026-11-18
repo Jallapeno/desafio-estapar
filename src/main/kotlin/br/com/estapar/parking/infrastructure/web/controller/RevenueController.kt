@@ -18,8 +18,6 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
-import io.swagger.v3.oas.annotations.media.ExampleObject
-import io.swagger.v3.oas.annotations.parameters.RequestBody
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
@@ -28,10 +26,8 @@ import java.time.format.DateTimeParseException
 class RevenueController(private val queryRevenue: QueryRevenueUseCase, private val mapper: ObjectMapper) {
     @Operation(
         summary = "Consultar receita por setor e data UTC",
-        description = "sector é obrigatório no conjunto de filtros. date é opcional e assume o dia atual UTC. Aceita query params e/ou body JSON; valores conflitantes retornam 400. Soma somente sessões EXITED até o instante timestamp. Sem receita retorna amount 0.00. Clientes de navegador, incluindo Swagger UI, devem usar query params: o body GET é mantido para compatibilidade com o enunciado.",
+        description = "sector é obrigatório no conjunto de filtros. date é opcional e assume o dia atual UTC. Aceita query params e/ou body JSON; valores conflitantes retornam 400. Soma somente sessões EXITED até o instante timestamp. Sem receita retorna amount 0.00. Clientes de navegador, incluindo Swagger UI, devem usar query params: o body GET é mantido para compatibilidade com o enunciado e descrito apenas neste texto, sem requestBody na especificação. Exemplo para clientes HTTP que suportam body GET: {\"sector\":\"A\",\"date\":\"2025-01-01\"}.",
         tags = ["Receita"],
-        requestBody = RequestBody(required = false, content = [Content(schema = Schema(implementation = RevenueRequest::class),
-            examples = [ExampleObject(value = """{"sector":"A","date":"2025-01-01"}""")])]),
         responses = [
             ApiResponse(responseCode = "200", description = "Receita em BRL e instante UTC da consulta.", content = [Content(schema = Schema(implementation = RevenueResponse::class))]),
             ApiResponse(responseCode = "400", description = "Setor ausente/inválido, data inválida ou filtros conflitantes."),

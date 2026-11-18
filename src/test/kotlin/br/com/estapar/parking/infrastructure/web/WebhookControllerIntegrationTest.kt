@@ -27,6 +27,9 @@ class WebhookControllerIntegrationTest {
     @field:Client("/")
     lateinit var httpClient: HttpClient
 
+    @Inject
+    lateinit var mapper: io.micronaut.serde.ObjectMapper
+
     private val recordedCommands = mutableListOf<WebhookEventCommand>()
 
     @MockBean(ProcessWebhookEventUseCase::class)
@@ -88,8 +91,36 @@ class WebhookControllerIntegrationTest {
     }
 
     @Test
+    fun `should accept simulator timestamps as UTC while respecting explicit offsets`() {
+        val cases = listOf(
+            "2025-01-01T12:00:00" to "2025-01-01T12:00:00Z",
+            "2025-01-01T12:00:00.123" to "2025-01-01T12:00:00.123Z",
+            "2025-01-01T15:00:00.123+03:00" to "2025-01-01T12:00:00.123Z",
+        )
+        for ((input, expected) in cases) {
+            for ((type, field) in listOf("ENTRY" to "entry_time", "EXIT" to "exit_time")) {
+                val json = """{"license_plate":"SIMULATOR","event_type":"$type","$field":"$input"}"""
+                val request = HttpRequest.POST("/webhook", json).contentType(MediaType.APPLICATION_JSON_TYPE)
+                assertEquals(HttpStatus.OK, httpClient.toBlocking().exchange(request, Void::class.java).status)
+                val command = recordedCommands.last()
+                assertEquals(Instant.parse(expected), if (type == "ENTRY") command.entryTime else command.exitTime)
+            }
+        }
+    }
+
+    @Test
+    fun `should keep the simulator timestamp extension scoped to webhook properties`() {
+        assertThrows(java.time.format.DateTimeParseException::class.java) {
+            mapper.readValue("\"2025-01-01T12:00:00\"", Instant::class.java)
+        }
+    }
+
+    @Test
     fun `should return 400 Bad Request for blank license_plate, unknown event_type or missing event fields`() {
         val invalidPayloads = listOf(
+            """{"license_plate":"SIMULATOR","event_type":"ENTRY","entry_time":"2025-02-30T12:00:00"}""",
+            """{"license_plate":"SIMULATOR","event_type":"EXIT","exit_time":"2025-01-01"}""",
+            """{"license_plate":"SIMULATOR","event_type":"ENTRY","entry_time":12345}""",
             """{"license_plate": "   ", "entry_time": "2025-01-01T12:00:00.000Z", "event_type": "ENTRY"}""",
             """{"license_plate": "${"A".repeat(21)}", "entry_time": "2025-01-01T12:00:00.000Z", "event_type": "ENTRY"}""",
             """{"license_plate": "ZUL0001", "event_type": "INVALID_TYPE"}""",

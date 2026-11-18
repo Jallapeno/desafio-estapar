@@ -38,14 +38,14 @@ class OpenApiIntegrationTest {
         assertTrue((schema["required"] as List<*>).containsAll(listOf("license_plate", "event_type")))
     }
 
-    @Test fun `should document revenue filters optional JSON body and response schema`() {
+    @Test fun `should document revenue query filters without a GET request body for browser clients`() {
         val document = spec()
         val operation = document.node("paths").node("/revenue").node("get")
         val params = operation["parameters"] as List<*>
         assertEquals(setOf("sector", "date"), params.map { (it as Map<*, *>)["name"] }.toSet())
         assertTrue(operation.node("responses").keys.containsAll(listOf("200", "400", "500")))
-        assertEquals(false, operation.node("requestBody")["required"] ?: false)
-        assertTrue(operation.node("requestBody").node("content").containsKey("application/json"))
+        assertFalse(operation.containsKey("requestBody"), "Browsers reject GET requests with a body")
+        assertTrue(operation["description"].toString().contains("body GET"))
         val response = document.node("components").node("schemas").node("RevenueResponse").node("properties")
         assertEquals(setOf("amount", "currency", "timestamp"), response.keys)
     }

@@ -45,7 +45,7 @@ docker run -d --name estapar-simulator --network host cfontes0estapar/garage-sim
 
 No Docker Desktop, a rede host exige versão 4.34 ou posterior e a opção **Settings → Resources → Network → Enable host networking**, com reinício do Docker Desktop. Isso permite ao container alcançar o webhook no host. Veja a [documentação oficial da rede host](https://docs.docker.com/engine/network/drivers/host/).
 
-A aplicação busca `GET http://localhost:8080/garage`, valida a configuração e persiste setores/vagas. Falhas transitórias recebem retentativas exponenciais. Se a sincronização inicial não terminar, a inicialização falha: confira os logs, corrija a dependência e execute novamente. Reiniciar preserva a ocupação das vagas no upsert.
+A aplicação busca `GET http://localhost:8080/garage`, valida a configuração e persiste setores/vagas. Falhas transitórias recebem retentativas exponenciais. Se a sincronização inicial não terminar, a inicialização falha: confira os logs, corrija a dependência e execute novamente. Reiniciar preserva a ocupação das vagas no upsert. A configuração recebida é um snapshot completo: pode acrescentar setores/vagas e atualizar preços/capacidade, mas não remover identidades nem mudar setor/coordenadas de vagas existentes. Reduções abaixo da ocupação ativa são rejeitadas. Essas validações usam o lock dos eventos e antecedem qualquer escrita; uma configuração incompatível faz a sincronização falhar sem alterar dados ou histórico.
 
 Em Linux/macOS, use `./gradlew` no lugar de `.\gradlew.bat`. Para importar o exemplo `.env` em um shell POSIX, use `set -a`, depois `. ./.env` e então `set +a`.
 

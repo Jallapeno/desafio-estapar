@@ -8,6 +8,7 @@ import java.math.BigDecimal
  */
 interface ParkingSpotRepositoryPort {
     fun upsertAll(spots: List<ParkingSpot>)
+    fun findAll(): List<ParkingSpot>
     fun findById(id: Long): ParkingSpot?
     fun findByCoordinates(lat: BigDecimal, lng: BigDecimal): ParkingSpot?
     fun updateOccupied(spotId: Long, occupied: Boolean)

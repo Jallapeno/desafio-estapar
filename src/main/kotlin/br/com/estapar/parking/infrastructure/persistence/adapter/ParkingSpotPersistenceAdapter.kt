@@ -25,6 +25,9 @@ open class ParkingSpotPersistenceAdapter(
         }
     }
 
+    override fun findAll(): List<ParkingSpot> =
+        parkingSpotJdbcRepository.findAll().map { it.toDomain() }
+
     override fun findById(id: Long): ParkingSpot? =
         parkingSpotJdbcRepository.findById(id).orElse(null)?.toDomain()
 

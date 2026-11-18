@@ -3,8 +3,10 @@ package br.com.estapar.parking.application.service
 import br.com.estapar.parking.application.port.inbound.SyncGarageUseCase
 import br.com.estapar.parking.application.port.outbound.TransactionPort
 import br.com.estapar.parking.domain.port.outbound.GarageConfigProviderPort
+import br.com.estapar.parking.domain.port.outbound.ParkingSessionRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.ParkingSpotRepositoryPort
 import br.com.estapar.parking.domain.port.outbound.SectorRepositoryPort
+import br.com.estapar.parking.domain.service.GarageTopologyPolicy
 import org.slf4j.LoggerFactory
 
 /**
@@ -15,6 +17,7 @@ class GarageSyncService(
     private val sectorRepositoryPort: SectorRepositoryPort,
     private val parkingSpotRepositoryPort: ParkingSpotRepositoryPort,
     private val transactionPort: TransactionPort,
+    private val sessionRepositoryPort: ParkingSessionRepositoryPort,
 ) : SyncGarageUseCase {
 
     private val logger = LoggerFactory.getLogger(GarageSyncService::class.java)
@@ -23,6 +26,12 @@ class GarageSyncService(
         val configuration = garageConfigProviderPort.fetchConfiguration()
 
         transactionPort.executeInTransaction {
+            // Acquire the same lock as ENTRY/PARKED/EXIT before any snapshot read or mutation.
+            val currentSectors = sectorRepositoryPort.findAllForUpdate()
+            GarageTopologyPolicy.validate(
+                currentSectors, parkingSpotRepositoryPort.findAll(), configuration,
+                sessionRepositoryPort.countActiveSessions(),
+            )
             sectorRepositoryPort.upsertAll(configuration.sectors)
             parkingSpotRepositoryPort.upsertAll(configuration.spots)
         }

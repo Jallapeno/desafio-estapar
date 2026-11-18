@@ -10,7 +10,7 @@ Regras puras ficam no domínio. Serviços da aplicação dependem de interfaces 
 
 ## ADR-03 — Persistência e precisão
 
-Flyway versiona o schema. Preços e cobranças são decimais exatos; coordenadas usam `DECIMAL(10,6)`, e timestamps persistidos têm precisão de milissegundos (`DATETIME(3)`). O calculador preserva a precisão completa do `Duration`; payloads do simulador exemplificam milissegundos. Migrações existentes permanecem imutáveis.
+Flyway versiona o schema. Preços e cobranças são decimais exatos; coordenadas usam `DECIMAL(10,6)`, e timestamps persistidos têm precisão de milissegundos (`DATETIME(3)`). O calculador preserva a precisão completa do `Duration`; payloads do webhook com frações submilissegundo são rejeitados para preservar a mesma precisão antes e depois da persistência. Migrações existentes permanecem imutáveis.
 
 ## ADR-04 — Capacidade e lock compartilhado
 
@@ -34,11 +34,11 @@ O enunciado mostra GET /revenue com body JSON. O endpoint oferece também query 
 
 ## ADR-09 — Sincronização e falhas
 
-Configuração é buscada fora da transação, validada e persistida atomicamente. Upserts preservam a ocupação já conhecida. Rede recebe retentativas; dados inválidos não são persistidos. Esgotadas as tentativas de startup, a aplicação falha em vez de operar sem topologia. Não há agendador de recuperação em segundo plano.
+Configuração é buscada fora da transação, validada e persistida atomicamente. Sob o mesmo lock dos eventos, o snapshot completo deve preservar códigos de setores e IDs/setor/coordenadas das vagas existentes, além de manter capacidade suficiente para as sessões ativas. Acréscimos e alterações compatíveis de preço/capacidade são permitidos; remoções e realocações são rejeitadas antes de qualquer escrita, preservando histórico e sessões. Upserts preservam a ocupação já conhecida. Rede recebe retentativas; dados inválidos não são persistidos. Esgotadas as tentativas de startup, a aplicação falha em vez de operar sem topologia. Não há agendador de recuperação em segundo plano.
 
 ## ADR-10 — Limites do contrato de eventos
 
-HTTP 200 reconhece eventos válidos, inclusive duplicatas e conflitos de negócio registrados em log. Payloads inválidos retornam 400. A ausência de ID de evento e de timestamp em PARKED impede deduplicação global perfeita entre visitas; a garantia implementada é baseada na sessão ativa. A política de setor padrão para EXIT sem PARKED está em [US-08-exit.md](US-08-exit.md).
+HTTP 200 reconhece eventos válidos, inclusive duplicatas e conflitos de negócio registrados em log. Payloads inválidos retornam 400. A ausência de ID de evento e de timestamp em PARKED impede deduplicação global perfeita entre visitas; ENTRY também é deduplicado no histórico por placa e entry_time; os demais eventos dependem do estado da sessão ativa. A política de setor padrão para EXIT sem PARKED está em [US-08-exit.md](US-08-exit.md).
 
 ## ADR-11 — Verificação da entrega
 
